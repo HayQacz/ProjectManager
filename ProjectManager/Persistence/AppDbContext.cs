@@ -12,6 +12,9 @@ public class AppDbContext : DbContext
     public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
     public DbSet<ProjectCategory> ProjectCategories => Set<ProjectCategory>();
     public DbSet<ProjectCategoryItem> ProjectCategoryItems => Set<ProjectCategoryItem>();
+    public DbSet<User> Users => Set<User>();
+
+    
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -22,5 +25,16 @@ public class AppDbContext : DbContext
             .WithOne(d => d.Project)
             .HasForeignKey<ProjectDetails>(d => d.ProjectId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Project>()
+            .HasMany(p => p.Members)
+            .WithMany(m => m.Projects)
+            .UsingEntity(j => j.ToTable("ProjectMembersProjects"));
+
+        modelBuilder.Entity<User>()
+            .HasOne(u => u.ProjectMember)
+            .WithOne(pm => pm.User)
+            .HasForeignKey<User>(u => u.ProjectMemberId);
     }
+
 }

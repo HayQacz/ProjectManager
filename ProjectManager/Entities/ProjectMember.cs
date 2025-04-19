@@ -3,8 +3,10 @@
 public class ProjectMember
 {
     public Guid Id { get; set; } = Guid.NewGuid();
-    public string UserEmail { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty;
 
-    public Guid ProjectId { get; set; }
-    public Project Project { get; set; } = null!;
+    public ICollection<Project> Projects { get; set; } = new List<Project>();
+
+    public User? User { get; set; }
 }
+
