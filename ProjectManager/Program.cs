@@ -3,6 +3,9 @@ using MediatR;
 using ProjectManager.Persistence;
 using Microsoft.AspNetCore.Identity;
 using ProjectManager.Entities;
+using ProjectManager.Services.Authorization;
+using ProjectManager.Services.Interfaces;
+using ProjectManager.Services.Implementations;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -41,6 +44,11 @@ builder.Services.AddMediatR(cfg =>
     cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
 });
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddScoped<IProjectAuthorizationService, ProjectAuthorizationService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IUserContext, UserContext>();
+
+
 
 
 var app = builder.Build();
