@@ -12,6 +12,9 @@ public class AppDbContext : DbContext
     public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
     public DbSet<ProjectCategory> ProjectCategories => Set<ProjectCategory>();
     public DbSet<ProjectCategoryItem> ProjectCategoryItems => Set<ProjectCategoryItem>();
+    public DbSet<User> Users => Set<User>();
+
+    
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
