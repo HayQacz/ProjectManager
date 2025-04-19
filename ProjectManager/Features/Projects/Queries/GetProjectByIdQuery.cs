@@ -13,33 +13,28 @@ public class GetProjectByIdHandler : IRequestHandler<GetProjectByIdQuery, Projec
 {
     private readonly AppDbContext _db;
     private readonly IUserContext _userContext;
+    private readonly IProjectAuthorizationService _authService;
 
-    public GetProjectByIdHandler(AppDbContext db, IUserContext userContext)
+    public GetProjectByIdHandler(AppDbContext db, IUserContext userContext, IProjectAuthorizationService authService)
     {
         _db = db;
         _userContext = userContext;
+        _authService = authService;
     }
 
     public async Task<ProjectDto?> Handle(GetProjectByIdQuery request, CancellationToken cancellationToken)
     {
         var project = await _db.Projects
             .Include(p => p.Details)
-            .Include(p => p.Members)
-            .ThenInclude(m => m.User)
-            .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
 
-        if (project == null)
+        if (project is null)
             return null;
 
-        if (project.Details?.Visibility == ProjectVisibility.Private)
-        {
-            var userId = _userContext.UserId;
-            var isMember = project.Members.Any(m => m.User.Id == userId);
+        var userId = _userContext.UserId;
 
-            if (!isMember)
-                return null;
-        }
+        if (!await _authService.CanViewProject(userId, request.Id))
+            return null;
 
         return new ProjectDto
         {
@@ -48,10 +43,11 @@ public class GetProjectByIdHandler : IRequestHandler<GetProjectByIdQuery, Projec
             Description = project.Description,
             CreatedAt = project.CreatedAt,
             Deadline = project.Details?.Deadline,
-            Status = project.Details?.Status,
             TechnologiesUsed = project.Details?.TechnologiesUsed,
-            IsCommercial = project.Details?.IsCommercial,
-            Visibility = project.Details?.Visibility
+            Status = project.Details?.Status,
+            Visibility = project.Details?.Visibility,
+            IsCommercial = project.Details?.IsCommercial
         };
     }
 }
+
