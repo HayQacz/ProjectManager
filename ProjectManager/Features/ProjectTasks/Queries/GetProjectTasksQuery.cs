@@ -30,7 +30,25 @@ public class GetProjectTasksHandler : IRequestHandler<GetProjectTasksQuery, List
         var userId = _userContext.UserId;
 
         var projectMember = await _db.ProjectMembers
-            .FirstOrDefaultAsync(pm => pm.UserId == userId, cancellationToken);
+            .Include(pm => pm.User)
+            .Include(pm => pm.Projects)
+            .FirstOrDefaultAsync(pm =>
+                pm.User != null &&
+                pm.User.Id == userId &&
+                pm.Projects.Any(p => p.Id == request.ProjectId),
+                cancellationToken);
+
+        var allowedRoles = new[]
+        {
+            ProjectMemberRole.Contributor,
+            ProjectMemberRole.Manager,
+            ProjectMemberRole.Owner
+        };
+
+        if (projectMember is null || !allowedRoles.Contains(projectMember.Role))
+        {
+            throw new UnauthorizedAccessException("You are not authorized to view project tasks.");
+        }
 
         var query = _db.ProjectTasks
             .Where(t => t.ProjectId == request.ProjectId)
@@ -41,7 +59,7 @@ public class GetProjectTasksHandler : IRequestHandler<GetProjectTasksQuery, List
             query = query.Where(t => t.Status == request.Status.Value);
         }
 
-        if (request.OnlyAssignedToMe && projectMember is not null)
+        if (request.OnlyAssignedToMe)
         {
             query = query.Where(t => t.AssignedMemberId == projectMember.Id);
         }
