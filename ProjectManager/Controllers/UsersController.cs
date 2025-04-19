@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProjectManager.Features.Users.Commands;
 using ProjectManager.Features.Users.Queries;
@@ -17,13 +18,14 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("register")]
+    [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] RegisterUserCommand command)
     {
         var user = await _mediator.Send(command);
         return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
     }
-
     [HttpGet("{id:guid}")]
+    [Authorize]
     public async Task<IActionResult> GetById(Guid id)
     {
         var user = await _mediator.Send(new GetUserByIdQuery(id));

@@ -2,11 +2,13 @@
 using Microsoft.AspNetCore.Mvc;
 using ProjectManager.Features.ProjectMembers.Commands;
 using ProjectManager.Features.ProjectMembers.Queries;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ProjectManager.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class ProjectMembersController : ControllerBase
 {
     private readonly IMediator _mediator;

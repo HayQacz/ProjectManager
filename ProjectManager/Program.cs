@@ -6,6 +6,9 @@ using ProjectManager.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("ProjectManager.Tests")]
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,3 +56,5 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.Run();
+
+public partial class Program { }
