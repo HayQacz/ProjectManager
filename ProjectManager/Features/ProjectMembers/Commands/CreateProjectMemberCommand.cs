@@ -1,11 +1,12 @@
 ﻿using MediatR;
 using ProjectManager.Entities;
+using ProjectManager.Entities.Enums;
 using ProjectManager.Persistence;
 using ProjectManager.Features.ProjectMembers.Models;
 
 namespace ProjectManager.Features.ProjectMembers.Commands;
 
-public record CreateProjectMemberCommand(string Role) : IRequest<ProjectMemberDto>;
+public record CreateProjectMemberCommand(ProjectMemberRole Role) : IRequest<ProjectMemberDto>;
 
 public class CreateProjectMemberHandler : IRequestHandler<CreateProjectMemberCommand, ProjectMemberDto>
 {
