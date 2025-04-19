@@ -22,5 +22,16 @@ public class AppDbContext : DbContext
             .WithOne(d => d.Project)
             .HasForeignKey<ProjectDetails>(d => d.ProjectId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Project>()
+            .HasMany(p => p.Members)
+            .WithMany(m => m.Projects)
+            .UsingEntity(j => j.ToTable("ProjectMembersProjects"));
+
+        modelBuilder.Entity<User>()
+            .HasOne(u => u.ProjectMember)
+            .WithOne(pm => pm.User)
+            .HasForeignKey<User>(u => u.ProjectMemberId);
     }
+
 }
