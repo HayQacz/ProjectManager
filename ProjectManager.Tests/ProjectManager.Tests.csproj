@@ -25,4 +25,8 @@
     <ProjectReference Include="..\ProjectManager\ProjectManager.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="ProjectTasks\" />
+  </ItemGroup>
+
 </Project>

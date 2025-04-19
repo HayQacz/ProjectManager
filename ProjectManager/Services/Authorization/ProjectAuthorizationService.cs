@@ -21,17 +21,27 @@ public class ProjectAuthorizationService : IProjectAuthorizationService
             .Include(p => p.Details)
             .FirstOrDefaultAsync(p => p.Id == projectId);
 
-        if (project == null)
+        if (project is null)
             return false;
 
         if (project.Details is null || project.Details.Visibility != ProjectVisibility.Private)
             return true;
 
-        return await _db.Users
-            .AnyAsync(u => u.Id == userId &&
-                           u.ProjectMemberId != null &&
-                           project.Members.Any(pm => pm.Id == u.ProjectMemberId));
+        var user = await _db.Users
+            .Include(u => u.ProjectMember)
+            .FirstOrDefaultAsync(u => u.Id == userId);
+
+        if (user?.ProjectMember is null)
+            return false;
+
+        var isMember = project.Members.Any(pm => pm.Id == user.ProjectMemberId);
+        var hasAccess = user.ProjectMember.Role is ProjectMemberRole.Contributor
+            or ProjectMemberRole.Manager
+            or ProjectMemberRole.Owner;
+
+        return isMember && hasAccess;
     }
+
 
     public async Task<bool> CanEditProject(Guid userId, Guid projectId)
     {
@@ -46,12 +56,12 @@ public class ProjectAuthorizationService : IProjectAuthorizationService
             .Include(p => p.Members)
             .FirstOrDefaultAsync(p => p.Id == projectId);
 
-        if (project == null)
+        if (project is null)
             return false;
 
-        return await _db.ProjectMembers
-            .Where(pm => pm.Id == user.ProjectMemberId && project.Members.Contains(pm))
-            .AnyAsync(pm => pm.Role == ProjectMemberRole.Owner || pm.Role == ProjectMemberRole.Manager);
+        return project.Members.Any(pm =>
+            pm.Id == user.ProjectMemberId &&
+            (pm.Role == ProjectMemberRole.Owner || pm.Role == ProjectMemberRole.Manager));
     }
 
     public async Task<bool> CanDeleteProject(Guid userId, Guid projectId)
@@ -67,12 +77,12 @@ public class ProjectAuthorizationService : IProjectAuthorizationService
             .Include(p => p.Members)
             .FirstOrDefaultAsync(p => p.Id == projectId);
 
-        if (project == null)
+        if (project is null)
             return false;
 
-        return await _db.ProjectMembers
-            .Where(pm => pm.Id == user.ProjectMemberId && project.Members.Contains(pm))
-            .AnyAsync(pm => pm.Role == ProjectMemberRole.Owner);
+        return project.Members.Any(pm =>
+            pm.Id == user.ProjectMemberId &&
+            pm.Role == ProjectMemberRole.Owner);
     }
 
     public async Task<bool> CanManageMembers(Guid userId, Guid projectId)
@@ -88,11 +98,11 @@ public class ProjectAuthorizationService : IProjectAuthorizationService
             .Include(p => p.Members)
             .FirstOrDefaultAsync(p => p.Id == projectId);
 
-        if (project == null)
+        if (project is null)
             return false;
 
-        return await _db.ProjectMembers
-            .Where(pm => pm.Id == user.ProjectMemberId && project.Members.Contains(pm))
-            .AnyAsync(pm => pm.Role == ProjectMemberRole.Owner || pm.Role == ProjectMemberRole.Manager);
+        return project.Members.Any(pm =>
+            pm.Id == user.ProjectMemberId &&
+            (pm.Role == ProjectMemberRole.Owner || pm.Role == ProjectMemberRole.Manager));
     }
 }

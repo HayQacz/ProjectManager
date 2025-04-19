@@ -9,6 +9,7 @@ using ProjectManager.Persistence;
 using ProjectManager.Features.Users.Commands;
 using Xunit;
 using Xunit.Abstractions;
+using ProjectManager.Tests.Dependencies;
 
 namespace ProjectManager.Tests.Integration;
 
