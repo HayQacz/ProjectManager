@@ -11,6 +11,7 @@ public class ProjectMember
     
     public ICollection<Project> Projects { get; set; } = new List<Project>();
 
+    public Guid? UserId { get; set; }
     public User? User { get; set; }
 
 

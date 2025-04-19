@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<ProjectCategory> ProjectCategories => Set<ProjectCategory>();
     public DbSet<ProjectCategoryItem> ProjectCategoryItems => Set<ProjectCategoryItem>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<ProjectTask> ProjectTasks => Set<ProjectTask>();
 
     
 
@@ -35,6 +36,19 @@ public class AppDbContext : DbContext
             .HasOne(u => u.ProjectMember)
             .WithOne(pm => pm.User)
             .HasForeignKey<User>(u => u.ProjectMemberId);
+        
+        modelBuilder.Entity<ProjectTask>()
+            .HasOne(t => t.Project)
+            .WithMany(p => p.Tasks)
+            .HasForeignKey(t => t.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ProjectTask>()
+            .HasOne(t => t.AssignedMember)
+            .WithMany()
+            .HasForeignKey(t => t.AssignedMemberId)
+            .OnDelete(DeleteBehavior.SetNull);
+
     }
 
 }
