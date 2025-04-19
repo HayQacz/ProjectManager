@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using ProjectManager.Entities.Enums;
 using ProjectManager.Persistence;
+using ProjectManager.Services.Interfaces;
 
 namespace ProjectManager.Features.Projects.Commands;
 
@@ -19,19 +20,32 @@ public record UpdateProjectCommand(
 public class UpdateProjectHandler : IRequestHandler<UpdateProjectCommand, bool>
 {
     private readonly AppDbContext _db;
+    private readonly IUserContext _userContext;
 
-    public UpdateProjectHandler(AppDbContext db)
+    public UpdateProjectHandler(AppDbContext db, IUserContext userContext)
     {
         _db = db;
+        _userContext = userContext;
     }
 
     public async Task<bool> Handle(UpdateProjectCommand request, CancellationToken cancellationToken)
     {
         var project = await _db.Projects
             .Include(p => p.Details)
+            .Include(p => p.Members)
             .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
 
         if (project is null)
+            return false;
+
+        var userId = _userContext.UserId;
+
+        var member = await _db.ProjectMembers
+            .Include(m => m.User)
+            .Include(m => m.Projects)
+            .FirstOrDefaultAsync(m => m.User.Id == userId && m.Projects.Any(p => p.Id == request.Id), cancellationToken);
+
+        if (member == null || (member.Role != ProjectMemberRole.Owner && member.Role != ProjectMemberRole.Manager))
             return false;
 
         project.Update(request.Name, request.Description);

@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using ProjectManager.Features.Projects.Models;
 using ProjectManager.Persistence;
+using ProjectManager.Services.Interfaces;
+using ProjectManager.Entities.Enums;
 
 namespace ProjectManager.Features.Projects.Queries;
 
@@ -10,16 +12,26 @@ public record GetAllProjectsQuery : IRequest<List<ProjectDto>>;
 public class GetAllProjectsHandler : IRequestHandler<GetAllProjectsQuery, List<ProjectDto>>
 {
     private readonly AppDbContext _db;
+    private readonly IUserContext _userContext;
 
-    public GetAllProjectsHandler(AppDbContext db)
+    public GetAllProjectsHandler(AppDbContext db, IUserContext userContext)
     {
         _db = db;
+        _userContext = userContext;
     }
 
     public async Task<List<ProjectDto>> Handle(GetAllProjectsQuery request, CancellationToken cancellationToken)
     {
-        return await _db.Projects
+        var userId = _userContext.UserId;
+
+        var visibleProjects = await _db.Projects
             .Include(p => p.Details)
+            .Include(p => p.Members)
+            .ThenInclude(m => m.User)
+            .Where(p =>
+                p.Details!.Visibility != ProjectVisibility.Private ||
+                p.Members.Any(m => m.User.Id == userId)
+            )
             .AsNoTracking()
             .Select(p => new ProjectDto
             {
@@ -34,5 +46,7 @@ public class GetAllProjectsHandler : IRequestHandler<GetAllProjectsQuery, List<P
                 Visibility = p.Details.Visibility
             })
             .ToListAsync(cancellationToken);
+
+        return visibleProjects;
     }
 }
