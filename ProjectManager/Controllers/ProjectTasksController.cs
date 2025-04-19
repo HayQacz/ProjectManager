@@ -19,19 +19,24 @@ public class ProjectTasksController : ControllerBase
         _mediator = mediator;
     }
 
-    [HttpGet("{projectId:guid}/tasks")]
-    public async Task<IActionResult> GetTasks(Guid projectId, [FromQuery] string? status, [FromQuery] bool onlyMine = false, [FromQuery] bool unassigned = false)
+    [HttpGet("{projectId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> GetTasks(Guid projectId, [FromQuery] ProjectTaskStatus? status, [FromQuery] bool onlyAssignedToMe = false, [FromQuery] bool onlyUnassigned = false)
     {
-        ProjectTaskStatus? parsedStatus = null;
-
-        if (!string.IsNullOrEmpty(status) && Enum.TryParse<ProjectTaskStatus>(status, true, out var result))
+        try
         {
-            parsedStatus = result;
+            var query = new GetProjectTasksQuery(projectId, status, onlyAssignedToMe, onlyUnassigned);
+            var tasks = await _mediator.Send(query);
+            return Ok(tasks);
         }
-
-        var query = new GetProjectTasksQuery(projectId, parsedStatus, onlyMine, unassigned);
-        var tasks = await _mediator.Send(query);
-        return Ok(tasks);
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, "An unexpected error occurred.");
+        }
     }
 
 
