@@ -4,17 +4,12 @@ namespace ProjectManager.Entities;
 
 public class ProjectMember
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
-    public string DisplayName { get; set; } = string.Empty;
+    public Guid Id            { get; set; } = Guid.NewGuid();
+    public Guid ProjectId     { get; set; }            
+    public Guid UserId        { get; set; }           
+    public string? DisplayName{ get; set; }
+    public ProjectMemberRole  Role { get; set; } = ProjectMemberRole.Viewer;
 
-    public ProjectMemberRole Role { get; set; } = ProjectMemberRole.Viewer;
-    
-    public ICollection<Project> Projects { get; set; } = new List<Project>();
-
-    public Guid? UserId { get; set; }
-    public User? User { get; set; }
-
-
-    
+    public Project? Project   { get; set; }
+    public User?    User      { get; set; }
 }
-

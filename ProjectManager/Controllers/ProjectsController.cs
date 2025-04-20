@@ -19,9 +19,9 @@ public class ProjectsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateProjectCommand command)
+    public async Task<IActionResult> Create([FromBody] CreateProjectCommand commandHandler)
     {
-        var id = await _mediator.Send(command);
+        var id = await _mediator.Send(commandHandler);
         return CreatedAtAction(nameof(GetById), new { id }, null);
     }
 
@@ -40,12 +40,12 @@ public class ProjectsController : ControllerBase
     }
 
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProjectCommand command)
+    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateProjectCommand commandHandler)
     {
-        if (id != command.Id)
+        if (id != commandHandler.Id)
             return BadRequest("ID in body and URL do not match.");
 
-        var updated = await _mediator.Send(command);
+        var updated = await _mediator.Send(commandHandler);
         return updated ? NoContent() : NotFound();
     }
 

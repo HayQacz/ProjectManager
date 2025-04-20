@@ -10,14 +10,14 @@ using Xunit.Abstractions;
 
 namespace ProjectManager.Tests.Users;
 
-public class RegisterAndLoginUserTests
+public class RegisterAndLoginUserCommandHandlerTests
 {
     private readonly AppDbContext _db;
     private readonly IPasswordHasher<User> _hasher;
     private readonly IConfiguration _config;
     private readonly ITestOutputHelper _output;
 
-    public RegisterAndLoginUserTests(ITestOutputHelper output)
+    public RegisterAndLoginUserCommandHandlerTests(ITestOutputHelper output)
     {
         _output = output;
 
@@ -38,7 +38,7 @@ public class RegisterAndLoginUserTests
     {
 
         // Arrange
-        var registerHandler = new RegisterUserHandler(_db, _hasher);
+        var registerHandler = new RegisterUserCommandHandler(_db, _hasher);
         var loginHandler = new LoginUserHandler(_db, _hasher, _config);
 
         var email = "test@user.com";

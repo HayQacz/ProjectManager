@@ -3,11 +3,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ProjectManager.Features.ProjectMembers.Commands;
 using ProjectManager.Features.ProjectMembers.Queries;
+using ProjectManager.Services.Interfaces;
+using System.Security.Claims;
 
 namespace ProjectManager.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/Projects/{projectId:guid}/ProjectMembers")]
 [Authorize]
 public class ProjectMembersController : ControllerBase
 {
@@ -18,47 +20,55 @@ public class ProjectMembersController : ControllerBase
         _mediator = mediator;
     }
 
-    [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateProjectMemberCommand command)
+    private Guid GetUserIdFromClaims()
     {
-        var member = await _mediator.Send(command);
-        return CreatedAtAction(nameof(GetById), new { id = member.Id }, member);
+        var userIdClaim = User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (userIdClaim == null)
+            throw new UnauthorizedAccessException("User ID not found in claims.");
+
+        return Guid.Parse(userIdClaim); 
     }
 
-    [HttpPost("add-to-project")]
-    public async Task<IActionResult> AddToProject([FromBody] AddProjectMemberToProjectCommand command)
+    [HttpPost("add/{userId:guid}")]
+    public async Task<IActionResult> AddToProject(Guid projectId, Guid userId)
     {
-        var result = await _mediator.Send(command);
+        var requestingUserId = GetUserIdFromClaims();
+        var result = await _mediator.Send(new AddProjectMemberToProjectCommand(projectId, userId, requestingUserId));
         return result ? Ok() : BadRequest("Failed to add member to project.");
     }
 
-    [HttpDelete("remove-from-project")]
-    public async Task<IActionResult> RemoveFromProject([FromBody] RemoveProjectMemberFromProjectCommand command)
+    [HttpDelete("remove/{userId:guid}")]
+    public async Task<IActionResult> RemoveFromProject(Guid projectId, Guid userId)
     {
-        var result = await _mediator.Send(command);
+        var requestingUserId = GetUserIdFromClaims();
+        var result = await _mediator.Send(new RemoveProjectMemberFromProjectCommand(projectId, userId, requestingUserId));
         return result ? Ok() : BadRequest("Failed to remove member from project.");
     }
 
-    [HttpPut("change-role")]
-    public async Task<IActionResult> ChangeRole([FromBody] ChangeProjectMemberRoleCommand command)
+    [HttpPut("change-role/{userId:guid}")]
+    public async Task<IActionResult> ChangeRole(Guid projectId, Guid userId, [FromBody] ChangeProjectMemberRoleCommand commandHandler)
     {
-        var result = await _mediator.Send(command);
+        if (userId != commandHandler.RequestingUserId)
+            return BadRequest("User ID mismatch.");
 
-        if (result is null)
+        var result = await _mediator.Send(commandHandler);
+
+        if (result == null)
             return BadRequest("Failed to change role.");
 
         return Ok(result);
     }
+    
 
-
-    [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id)
+    [HttpGet("{userId:guid}")]
+    public async Task<IActionResult> GetById(Guid projectId, Guid userId)
     {
-        var member = await _mediator.Send(new GetProjectMemberByIdQuery(id));
+        var member = await _mediator.Send(new GetProjectMemberByUserIdQuery(projectId, userId));
+
         return member is null ? NotFound() : Ok(member);
     }
 
-    [HttpGet("project/{projectId:guid}")]
+    [HttpGet]
     public async Task<IActionResult> GetByProjectId(Guid projectId)
     {
         var members = await _mediator.Send(new GetProjectMembersQuery(projectId));

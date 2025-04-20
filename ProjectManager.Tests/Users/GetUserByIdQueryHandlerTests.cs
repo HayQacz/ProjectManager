@@ -7,11 +7,11 @@ using ProjectManager.Features.Users.Queries;
 
 namespace ProjectManager.Tests.Users;
 
-public class GetUserByIdHandlerTests
+public class GetUserByIdQueryHandlerTests
 {
     private readonly AppDbContext _db;
 
-    public GetUserByIdHandlerTests()
+    public GetUserByIdQueryHandlerTests()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -33,7 +33,7 @@ public class GetUserByIdHandlerTests
         _db.Users.Add(user);
         await _db.SaveChangesAsync();
 
-        var handler = new GetUserByIdHandler(_db);
+        var handler = new GetUserByIdQueryHandler(_db);
         var result = await handler.Handle(new GetUserByIdQuery(user.Id), CancellationToken.None);
 
         Assert.NotNull(result);

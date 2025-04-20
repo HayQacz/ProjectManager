@@ -8,7 +8,7 @@ using ProjectManager.Entities.Enums;
 namespace ProjectManager.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/Projects/{projectId:guid}/ProjectTasks")]
 [Authorize]
 public class ProjectTasksController : ControllerBase
 {
@@ -19,9 +19,12 @@ public class ProjectTasksController : ControllerBase
         _mediator = mediator;
     }
 
-    [HttpGet("{projectId:guid}")]
-    [Authorize]
-    public async Task<IActionResult> GetTasks(Guid projectId, [FromQuery] ProjectTaskStatus? status, [FromQuery] bool onlyAssignedToMe = false, [FromQuery] bool onlyUnassigned = false)
+    [HttpGet]
+    public async Task<IActionResult> GetTasks(
+        Guid projectId, 
+        [FromQuery] ProjectTaskStatus? status, 
+        [FromQuery] bool onlyAssignedToMe = false, 
+        [FromQuery] bool onlyUnassigned = false)
     {
         try
         {
@@ -39,19 +42,28 @@ public class ProjectTasksController : ControllerBase
         }
     }
 
+    [HttpPost]
+    public async Task<IActionResult> CreateTask(Guid projectId, [FromBody] CreateProjectTaskCommand commandHandler)
+    {
+        if (projectId != commandHandler.ProjectId)
+            return BadRequest("Project ID mismatch.");
+
+        var taskDto = await _mediator.Send(commandHandler);
+        return CreatedAtAction(nameof(GetTasks), new { projectId = projectId }, taskDto);
+    }
 
     [HttpPut("{taskId:guid}")]
-    public async Task<IActionResult> UpdateTask(Guid taskId, [FromBody] UpdateProjectTaskCommand command)
+    public async Task<IActionResult> UpdateTask(Guid projectId, Guid taskId, [FromBody] UpdateProjectTaskCommand commandHandler)
     {
-        if (taskId != command.Id)
+        if (taskId != commandHandler.Id)
             return BadRequest("Mismatched task ID");
 
-        var result = await _mediator.Send(command);
+        var result = await _mediator.Send(commandHandler);
         return result ? NoContent() : Forbid();
     }
 
     [HttpDelete("{taskId:guid}")]
-    public async Task<IActionResult> DeleteTask(Guid taskId)
+    public async Task<IActionResult> DeleteTask(Guid projectId, Guid taskId)
     {
         var result = await _mediator.Send(new DeleteProjectTaskCommand(taskId));
         return result ? NoContent() : Forbid();
