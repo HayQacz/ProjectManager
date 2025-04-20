@@ -43,22 +43,22 @@ public class ProjectTasksController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateTask(Guid projectId, [FromBody] CreateProjectTaskCommand command)
+    public async Task<IActionResult> CreateTask(Guid projectId, [FromBody] CreateProjectTaskCommand commandHandler)
     {
-        if (projectId != command.ProjectId)
+        if (projectId != commandHandler.ProjectId)
             return BadRequest("Project ID mismatch.");
 
-        var taskDto = await _mediator.Send(command);
+        var taskDto = await _mediator.Send(commandHandler);
         return CreatedAtAction(nameof(GetTasks), new { projectId = projectId }, taskDto);
     }
 
     [HttpPut("{taskId:guid}")]
-    public async Task<IActionResult> UpdateTask(Guid projectId, Guid taskId, [FromBody] UpdateProjectTaskCommand command)
+    public async Task<IActionResult> UpdateTask(Guid projectId, Guid taskId, [FromBody] UpdateProjectTaskCommand commandHandler)
     {
-        if (taskId != command.Id)
+        if (taskId != commandHandler.Id)
             return BadRequest("Mismatched task ID");
 
-        var result = await _mediator.Send(command);
+        var result = await _mediator.Send(commandHandler);
         return result ? NoContent() : Forbid();
     }
 

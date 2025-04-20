@@ -59,6 +59,6 @@ public class ProjectAuthorizationService : IProjectAuthorizationService
                                    pm.UserId    == userId);
 
         return member is not null &&
-               (member.Role == ProjectMemberRole.Owner || member.Role == ProjectMemberRole.Manager);
+               member.Role is ProjectMemberRole.Owner or ProjectMemberRole.Manager;
     }
 }

@@ -8,12 +8,12 @@ namespace ProjectManager.Features.ProjectMembers.Commands
 {
     public record RemoveProjectMemberFromProjectCommand(Guid ProjectId, Guid? UserId, Guid RequestingUserId) : IRequest<bool>;
 
-    public class RemoveProjectMemberFromProjectHandler : IRequestHandler<RemoveProjectMemberFromProjectCommand, bool>
+    public class RemoveProjectMemberFromProjectCommandHandler : IRequestHandler<RemoveProjectMemberFromProjectCommand, bool>
     {
         private readonly AppDbContext _db;
         private readonly IProjectAuthorizationService _auth;
 
-        public RemoveProjectMemberFromProjectHandler(AppDbContext db, IProjectAuthorizationService auth)
+        public RemoveProjectMemberFromProjectCommandHandler(AppDbContext db, IProjectAuthorizationService auth)
         {
             _db = db;
             _auth = auth;

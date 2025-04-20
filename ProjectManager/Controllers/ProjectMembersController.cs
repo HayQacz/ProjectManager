@@ -46,12 +46,12 @@ public class ProjectMembersController : ControllerBase
     }
 
     [HttpPut("change-role/{userId:guid}")]
-    public async Task<IActionResult> ChangeRole(Guid projectId, Guid userId, [FromBody] ChangeProjectMemberRoleCommand command)
+    public async Task<IActionResult> ChangeRole(Guid projectId, Guid userId, [FromBody] ChangeProjectMemberRoleCommand commandHandler)
     {
-        if (userId != command.RequestingUserId)
+        if (userId != commandHandler.RequestingUserId)
             return BadRequest("User ID mismatch.");
 
-        var result = await _mediator.Send(command);
+        var result = await _mediator.Send(commandHandler);
 
         if (result == null)
             return BadRequest("Failed to change role.");

@@ -9,12 +9,12 @@ namespace ProjectManager.Features.Users.Commands;
 
 public record RegisterUserCommand(string Email, string FullName, string Password) : IRequest<UserDto>;
 
-public class RegisterUserHandler : IRequestHandler<RegisterUserCommand, UserDto>
+public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, UserDto>
 {
     private readonly AppDbContext _db;
     private readonly IPasswordHasher<User> _hasher;
 
-    public RegisterUserHandler(AppDbContext db, IPasswordHasher<User> hasher)
+    public RegisterUserCommandHandler(AppDbContext db, IPasswordHasher<User> hasher)
     {
         _db = db;
         _hasher = hasher;

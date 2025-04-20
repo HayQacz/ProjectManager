@@ -19,9 +19,9 @@ public class UsersController : ControllerBase
 
     [HttpPost("register")]
     [AllowAnonymous]
-    public async Task<IActionResult> Register([FromBody] RegisterUserCommand command)
+    public async Task<IActionResult> Register([FromBody] RegisterUserCommand commandHandler)
     {
-        var user = await _mediator.Send(command);
+        var user = await _mediator.Send(commandHandler);
         return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
     }
     [HttpGet("{id:guid}")]
@@ -34,11 +34,11 @@ public class UsersController : ControllerBase
     
     [HttpPost("login")]
     [AllowAnonymous]
-    public async Task<IActionResult> Login([FromBody] LoginUserCommand command)
+    public async Task<IActionResult> Login([FromBody] LoginUserCommand commandHandler)
     {
         try
         {
-            var token = await _mediator.Send(command);
+            var token = await _mediator.Send(commandHandler);
             return Ok(new { token });
         }
         catch (UnauthorizedAccessException)

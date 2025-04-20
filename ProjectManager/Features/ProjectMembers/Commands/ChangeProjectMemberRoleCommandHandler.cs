@@ -10,12 +10,12 @@ namespace ProjectManager.Features.ProjectMembers.Commands;
 
 public record ChangeProjectMemberRoleCommand(Guid? UserId, ProjectMemberRole NewRole, Guid RequestingUserId, Guid ProjectId) : IRequest<ProjectMemberDto?>;
 
-public class ChangeProjectMemberRoleHandler : IRequestHandler<ChangeProjectMemberRoleCommand, ProjectMemberDto?>
+public class ChangeProjectMemberRoleCommandHandler : IRequestHandler<ChangeProjectMemberRoleCommand, ProjectMemberDto?>
 {
     private readonly AppDbContext _db;
     private readonly IProjectAuthorizationService _auth;
 
-    public ChangeProjectMemberRoleHandler(AppDbContext db, IProjectAuthorizationService auth)
+    public ChangeProjectMemberRoleCommandHandler(AppDbContext db, IProjectAuthorizationService auth)
     {
         _db = db;
         _auth = auth;

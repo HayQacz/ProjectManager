@@ -8,13 +8,13 @@ using ProjectManager.Features.Projects.Queries;
 
 namespace ProjectManager.Tests.Projects;
 
-public class GetProjectByIdHandlerTests
+public class GetProjectByIdQueryHandlerTests
 {
     private readonly AppDbContext _db;
     private readonly Mock<IUserContext> _userContextMock;
     private readonly Mock<IProjectAuthorizationService> _authServiceMock;
 
-    public GetProjectByIdHandlerTests()
+    public GetProjectByIdQueryHandlerTests()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString())
@@ -41,7 +41,7 @@ public class GetProjectByIdHandlerTests
         var query = new GetProjectByIdQuery(project.Id);
 
         // Act
-        var result = await handler.Handle(query, default);
+        var result = await handler.Handle(query, CancellationToken.None);
 
         // Assert
         Assert.NotNull(result);
@@ -65,7 +65,7 @@ public class GetProjectByIdHandlerTests
         var query = new GetProjectByIdQuery(project.Id);
 
         // Act
-        var result = await handler.Handle(query, default);
+        var result = await handler.Handle(query, CancellationToken.None);
 
         // Assert
         Assert.Null(result);

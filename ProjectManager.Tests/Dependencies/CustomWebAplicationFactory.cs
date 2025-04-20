@@ -33,12 +33,12 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
             services.AddScoped<IUserContext, FakeUserContext>();
             services.AddScoped<IProjectAuthorizationService, ProjectAuthorizationService>();
 
-            services.AddScoped<RegisterUserHandler>();
+            services.AddScoped<RegisterUserCommandHandler>();
             services.AddScoped<LoginUserHandler>();
-            services.AddScoped<CreateProjectHandler>();
-            services.AddScoped<AddProjectMemberToProjectHandler>();
-            services.AddScoped<ChangeProjectMemberRoleHandler>();
-            services.AddScoped<RemoveProjectMemberFromProjectHandler>();
+            services.AddScoped<CreateProjectCommandHandler>();
+            services.AddScoped<AddProjectMemberToProjectCommandHandler>();
+            services.AddScoped<ChangeProjectMemberRoleCommandHandler>();
+            services.AddScoped<RemoveProjectMemberFromProjectCommandHandler>();
             services.AddScoped<UpdateProjectTaskHandler>();
             services.AddScoped<DeleteProjectTaskHandler>();
         });

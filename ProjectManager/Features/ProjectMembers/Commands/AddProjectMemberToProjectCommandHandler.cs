@@ -12,13 +12,13 @@ public record AddProjectMemberToProjectCommand(
     Guid UserId,
     Guid RequestingUserId) : IRequest<bool>;
 
-public class AddProjectMemberToProjectHandler
+public class AddProjectMemberToProjectCommandHandler
         : IRequestHandler<AddProjectMemberToProjectCommand, bool>
 {
     private readonly AppDbContext _db;
     private readonly IProjectAuthorizationService _auth;
 
-    public AddProjectMemberToProjectHandler(
+    public AddProjectMemberToProjectCommandHandler(
         AppDbContext db,
         IProjectAuthorizationService auth)
     {
@@ -49,7 +49,7 @@ public class AddProjectMemberToProjectHandler
         {
             ProjectId    = project.Id,
             UserId       = user.Id,
-            Role         = ProjectMemberRole.Contributor,
+            Role         = ProjectMemberRole.Viewer,
             DisplayName  = user.FullName
         };
 

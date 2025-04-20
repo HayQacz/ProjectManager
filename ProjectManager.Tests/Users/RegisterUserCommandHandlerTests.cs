@@ -8,12 +8,12 @@ using Microsoft.AspNetCore.Identity;
 
 namespace ProjectManager.Tests.Users;
 
-public class RegisterUserHandlerTests
+public class RegisterUserCommandHandlerTests
 {
     private readonly AppDbContext _db;
     private readonly IPasswordHasher<User> _hasher;
 
-    public RegisterUserHandlerTests()
+    public RegisterUserCommandHandlerTests()
     {
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseInMemoryDatabase(Guid.NewGuid().ToString()) 
@@ -27,7 +27,7 @@ public class RegisterUserHandlerTests
     public async Task Handle_ShouldRegisterUser_WhenDataIsValid()
     {
         // Arrange
-        var handler = new RegisterUserHandler(_db, _hasher);
+        var handler = new RegisterUserCommandHandler(_db, _hasher);
         var command = new RegisterUserCommand(
             Email: "test@user.com",
             FullName: "Test User",

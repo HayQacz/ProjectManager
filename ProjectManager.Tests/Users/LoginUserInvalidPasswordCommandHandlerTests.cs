@@ -10,14 +10,14 @@ using Xunit.Abstractions;
 
 namespace ProjectManager.Tests.Users;
 
-public class LoginUserInvalidPasswordTests
+public class LoginUserInvalidPasswordCommandHandlerTests
 {
     private readonly AppDbContext _db;
     private readonly IPasswordHasher<User> _hasher;
     private readonly IConfiguration _config;
     private readonly ITestOutputHelper _output;
 
-    public LoginUserInvalidPasswordTests(ITestOutputHelper output)
+    public LoginUserInvalidPasswordCommandHandlerTests(ITestOutputHelper output)
     {
         _output = output;
 
@@ -41,7 +41,7 @@ public class LoginUserInvalidPasswordTests
         var correctPassword = "Correct123";
         var wrongPassword = "WrongPass123";
 
-        var registerHandler = new RegisterUserHandler(_db, _hasher);
+        var registerHandler = new RegisterUserCommandHandler(_db, _hasher);
         var loginHandler = new LoginUserHandler(_db, _hasher, _config);
 
         var registerCommand = new RegisterUserCommand(email, "Wrong Name", correctPassword);

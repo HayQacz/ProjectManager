@@ -16,12 +16,12 @@ public record CreateProjectCommand(
     bool? IsCommercial         = null
 ) : IRequest<Guid>;
 
-public class CreateProjectHandler : IRequestHandler<CreateProjectCommand, Guid>
+public class CreateProjectCommandHandler : IRequestHandler<CreateProjectCommand, Guid>
 {
     private readonly AppDbContext _db;
     private readonly IUserContext _user;
 
-    public CreateProjectHandler(AppDbContext db, IUserContext userContext)
+    public CreateProjectCommandHandler(AppDbContext db, IUserContext userContext)
     {
         _db   = db;
         _user = userContext;
