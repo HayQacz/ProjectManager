@@ -38,7 +38,6 @@ public class RegisterUserHandler : IRequestHandler<RegisterUserCommand, UserDto>
             Id = user.Id,
             Email = user.Email,
             FullName = user.FullName,
-            ProjectMemberId = user.ProjectMemberId
         };
     }
 }

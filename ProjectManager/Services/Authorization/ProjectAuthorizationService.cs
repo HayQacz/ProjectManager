@@ -13,22 +13,21 @@ public class ProjectAuthorizationService : IProjectAuthorizationService
     public async Task<bool> CanViewProject(Guid userId, Guid projectId)
     {
         var project = await _db.Projects
-                               .Include(p => p.Details)
-                               .FirstOrDefaultAsync(p => p.Id == projectId);
+            .Include(p => p.Details)
+            .FirstOrDefaultAsync(p => p.Id == projectId);
 
         if (project is null) return false;
-
         if (project.Details is null || project.Details.Visibility != ProjectVisibility.Private)
             return true;
 
         var member = await _db.ProjectMembers
-                              .FirstOrDefaultAsync(pm =>
-                                   pm.ProjectId == projectId &&
-                                   pm.UserId    == userId);
+            .FirstOrDefaultAsync(pm => pm.UserId == userId && pm.ProjectId == projectId);
 
-        return member is not null && member.Role is ProjectMemberRole.Contributor
-                                             or ProjectMemberRole.Manager
-                                             or ProjectMemberRole.Owner;
+        return member is not null &&
+               member.Role is ProjectMemberRole.Viewer
+                   or ProjectMemberRole.Contributor
+                   or ProjectMemberRole.Manager
+                   or ProjectMemberRole.Owner;
     }
 
     public async Task<bool> CanEditProject(Guid userId, Guid projectId)

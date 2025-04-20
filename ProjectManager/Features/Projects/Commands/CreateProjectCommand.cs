@@ -2,46 +2,58 @@
 using ProjectManager.Entities;
 using ProjectManager.Entities.Enums;
 using ProjectManager.Persistence;
+using ProjectManager.Services.Interfaces;
 
 namespace ProjectManager.Features.Projects.Commands;
 
 public record CreateProjectCommand(
     string Name,
     string Description,
-    DateTime? Deadline = null,
-    string? TechnologiesUsed = null,
-    ProjectStatus? Status = null,
+    DateTime? Deadline         = null,
+    string? TechnologiesUsed   = null,
+    ProjectStatus? Status      = null,
     ProjectVisibility? Visibility = null,
-    bool? IsCommercial = null
+    bool? IsCommercial         = null
 ) : IRequest<Guid>;
 
 public class CreateProjectHandler : IRequestHandler<CreateProjectCommand, Guid>
 {
     private readonly AppDbContext _db;
+    private readonly IUserContext _user;
 
-    public CreateProjectHandler(AppDbContext db)
+    public CreateProjectHandler(AppDbContext db, IUserContext userContext)
     {
-        _db = db;
+        _db   = db;
+        _user = userContext;
     }
 
-    public async Task<Guid> Handle(CreateProjectCommand request, CancellationToken cancellationToken)
+    public async Task<Guid> Handle(CreateProjectCommand req, CancellationToken ct)
     {
-        var project = new Project(request.Name, request.Description);
+        var project = new Project(req.Name, req.Description);
 
-        if (request.Deadline.HasValue || request.TechnologiesUsed is not null)
+        if (req.Deadline.HasValue || req.TechnologiesUsed is not null)
         {
             project.Details = new ProjectDetails
             {
-                Deadline = request.Deadline ?? DateTime.UtcNow.AddMonths(1),
-                Status = request.Status ?? ProjectStatus.Created,
-                TechnologiesUsed = request.TechnologiesUsed ?? string.Empty,
-                Visibility = request.Visibility ?? ProjectVisibility.Private,
-                IsCommercial = request.IsCommercial ?? false
+                Deadline         = req.Deadline        ?? DateTime.UtcNow.AddMonths(1),
+                Status           = req.Status          ?? ProjectStatus.Created,
+                TechnologiesUsed = req.TechnologiesUsed?? string.Empty,
+                Visibility       = req.Visibility      ?? ProjectVisibility.Private,
+                IsCommercial     = req.IsCommercial    ?? false
             };
         }
 
+        var owner = new ProjectMember
+        {
+            Project   = project,
+            UserId    = _user.UserId,
+            Role      = ProjectMemberRole.Owner
+        };
+        project.Members.Add(owner);
+
         _db.Projects.Add(project);
-        await _db.SaveChangesAsync(cancellationToken);
+        await _db.SaveChangesAsync(ct);
+
         return project.Id;
     }
 }

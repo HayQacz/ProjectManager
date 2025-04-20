@@ -10,48 +10,48 @@ public record UpdateProjectCommand(
     Guid Id,
     string Name,
     string Description,
-    DateTime? Deadline          = null,
-    string? TechnologiesUsed    = null,
-    ProjectStatus? Status       = null,
+    DateTime? Deadline           = null,
+    string? TechnologiesUsed     = null,
+    ProjectStatus? Status        = null,
     ProjectVisibility? Visibility = null,
-    bool? IsCommercial          = null
+    bool? IsCommercial           = null
 ) : IRequest<bool>;
 
 public class UpdateProjectHandler : IRequestHandler<UpdateProjectCommand, bool>
 {
-    private readonly AppDbContext _db;
-    private readonly IUserContext _userContext;
+    private readonly AppDbContext                _db;
+    private readonly IUserContext                _user;
+    private readonly IProjectAuthorizationService _auth;
 
-    public UpdateProjectHandler(AppDbContext db, IUserContext userContext)
+    public UpdateProjectHandler(
+        AppDbContext db,
+        IUserContext userContext,
+        IProjectAuthorizationService auth)
     {
-        _db          = db;
-        _userContext = userContext;
+        _db   = db;
+        _user = userContext;
+        _auth = auth;
     }
 
-    public async Task<bool> Handle(UpdateProjectCommand request, CancellationToken ct)
+    public async Task<bool> Handle(UpdateProjectCommand req, CancellationToken ct)
     {
+        if (!await _auth.CanEditProject(_user.UserId, req.Id))
+            throw new UnauthorizedAccessException("You do not have permission to delete project.");
+
         var project = await _db.Projects
                                .Include(p => p.Details)
-                               .FirstOrDefaultAsync(p => p.Id == request.Id, ct);
-        if (project is null) return false;
+                               .FirstOrDefaultAsync(p => p.Id == req.Id, ct);
+        if (project is null) throw new KeyNotFoundException("Project not found.");
 
-        var member = await _db.ProjectMembers
-                              .FirstOrDefaultAsync(m =>
-                                   m.ProjectId == request.Id &&
-                                   m.UserId    == _userContext.UserId, ct);
-
-        if (member is null || member.Role is not (ProjectMemberRole.Owner or ProjectMemberRole.Manager))
-            return false;
-
-        project.Update(request.Name, request.Description);
+        project.Update(req.Name, req.Description);
 
         if (project.Details is not null)
         {
-            project.Details.Deadline         = request.Deadline        ?? project.Details.Deadline;
-            project.Details.Status           = request.Status          ?? project.Details.Status;
-            project.Details.TechnologiesUsed = request.TechnologiesUsed?? project.Details.TechnologiesUsed;
-            project.Details.Visibility       = request.Visibility      ?? project.Details.Visibility;
-            project.Details.IsCommercial     = request.IsCommercial    ?? project.Details.IsCommercial;
+            project.Details.Deadline         = req.Deadline        ?? project.Details.Deadline;
+            project.Details.Status           = req.Status          ?? project.Details.Status;
+            project.Details.TechnologiesUsed = req.TechnologiesUsed?? project.Details.TechnologiesUsed;
+            project.Details.Visibility       = req.Visibility      ?? project.Details.Visibility;
+            project.Details.IsCommercial     = req.IsCommercial    ?? project.Details.IsCommercial;
         }
 
         await _db.SaveChangesAsync(ct);

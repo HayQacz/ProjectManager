@@ -2,7 +2,6 @@
 using Microsoft.EntityFrameworkCore;
 using ProjectManager.Persistence;
 using ProjectManager.Services.Interfaces;
-using ProjectManager.Entities.Enums;
 
 namespace ProjectManager.Features.Projects.Commands;
 
@@ -10,32 +9,31 @@ public record DeleteProjectCommand(Guid Id) : IRequest<bool>;
 
 public class DeleteProjectHandler : IRequestHandler<DeleteProjectCommand, bool>
 {
-    private readonly AppDbContext _db;
-    private readonly IUserContext _userContext;
+    private readonly AppDbContext                _db;
+    private readonly IUserContext                _user;
+    private readonly IProjectAuthorizationService _auth;
 
-    public DeleteProjectHandler(AppDbContext db, IUserContext userContext)
+    public DeleteProjectHandler(
+        AppDbContext db,
+        IUserContext userContext,
+        IProjectAuthorizationService auth)
     {
-        _db          = db;
-        _userContext = userContext;
+        _db   = db;
+        _user = userContext;
+        _auth = auth;
     }
 
-    public async Task<bool> Handle(DeleteProjectCommand request, CancellationToken ct)
+    public async Task<bool> Handle(DeleteProjectCommand req, CancellationToken ct)
     {
+        if (!await _auth.CanDeleteProject(_user.UserId, req.Id))
+            throw new UnauthorizedAccessException("You do not have permission to delete project.");
+
         var project = await _db.Projects
-            .Include(p => p.Details)
-            .FirstOrDefaultAsync(p => p.Id == request.Id, ct);
+            .FirstOrDefaultAsync(p => p.Id == req.Id, ct);
 
-        if (project is null) return false;
+        if (project is null) throw new KeyNotFoundException("Project not found.");
 
-        var member = await _db.ProjectMembers
-            .FirstOrDefaultAsync(m =>
-                m.ProjectId == request.Id &&
-                m.UserId    == _userContext.UserId, ct);
-
-        if (member is null || member.Role is not (ProjectMemberRole.Owner or ProjectMemberRole.Manager))
-            return false;
-
-        _db.Projects.Remove(project);
+        _db.Projects.Remove(project);          
         await _db.SaveChangesAsync(ct);
         return true;
     }
