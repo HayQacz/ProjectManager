@@ -8,7 +8,7 @@ using ProjectManager.Entities.Enums;
 namespace ProjectManager.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/Projects/{projectId:guid}/ProjectTasks")]
 [Authorize]
 public class ProjectTasksController : ControllerBase
 {
@@ -19,9 +19,12 @@ public class ProjectTasksController : ControllerBase
         _mediator = mediator;
     }
 
-    [HttpGet("{projectId:guid}")]
-    [Authorize]
-    public async Task<IActionResult> GetTasks(Guid projectId, [FromQuery] ProjectTaskStatus? status, [FromQuery] bool onlyAssignedToMe = false, [FromQuery] bool onlyUnassigned = false)
+    [HttpGet]
+    public async Task<IActionResult> GetTasks(
+        Guid projectId, 
+        [FromQuery] ProjectTaskStatus? status, 
+        [FromQuery] bool onlyAssignedToMe = false, 
+        [FromQuery] bool onlyUnassigned = false)
     {
         try
         {
@@ -39,9 +42,18 @@ public class ProjectTasksController : ControllerBase
         }
     }
 
+    [HttpPost]
+    public async Task<IActionResult> CreateTask(Guid projectId, [FromBody] CreateProjectTaskCommand command)
+    {
+        if (projectId != command.ProjectId)
+            return BadRequest("Project ID mismatch.");
+
+        var taskDto = await _mediator.Send(command);
+        return CreatedAtAction(nameof(GetTasks), new { projectId = projectId }, taskDto);
+    }
 
     [HttpPut("{taskId:guid}")]
-    public async Task<IActionResult> UpdateTask(Guid taskId, [FromBody] UpdateProjectTaskCommand command)
+    public async Task<IActionResult> UpdateTask(Guid projectId, Guid taskId, [FromBody] UpdateProjectTaskCommand command)
     {
         if (taskId != command.Id)
             return BadRequest("Mismatched task ID");
@@ -51,7 +63,7 @@ public class ProjectTasksController : ControllerBase
     }
 
     [HttpDelete("{taskId:guid}")]
-    public async Task<IActionResult> DeleteTask(Guid taskId)
+    public async Task<IActionResult> DeleteTask(Guid projectId, Guid taskId)
     {
         var result = await _mediator.Send(new DeleteProjectTaskCommand(taskId));
         return result ? NoContent() : Forbid();

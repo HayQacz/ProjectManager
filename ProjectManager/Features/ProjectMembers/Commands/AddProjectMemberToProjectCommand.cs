@@ -1,12 +1,13 @@
-﻿using MediatR;
-using Microsoft.EntityFrameworkCore;
-using ProjectManager.Persistence;
+﻿using Microsoft.EntityFrameworkCore;
+using MediatR;
 using ProjectManager.Entities;
+using ProjectManager.Entities.Enums;
+using ProjectManager.Persistence;
 using ProjectManager.Services.Interfaces;
 
 namespace ProjectManager.Features.ProjectMembers.Commands;
 
-public record AddProjectMemberToProjectCommand(Guid ProjectId, Guid MemberId, Guid RequestingUserId) : IRequest<bool>;
+public record AddProjectMemberToProjectCommand(Guid ProjectId, Guid UserId, Guid RequestingUserId) : IRequest<bool>;
 
 public class AddProjectMemberToProjectHandler : IRequestHandler<AddProjectMemberToProjectCommand, bool>
 {
@@ -15,26 +16,37 @@ public class AddProjectMemberToProjectHandler : IRequestHandler<AddProjectMember
 
     public AddProjectMemberToProjectHandler(AppDbContext db, IProjectAuthorizationService auth)
     {
-        _db = db;
+        _db   = db;
         _auth = auth;
     }
 
     public async Task<bool> Handle(AddProjectMemberToProjectCommand request, CancellationToken cancellationToken)
     {
         if (!await _auth.CanManageMembers(request.RequestingUserId, request.ProjectId))
-            return false;
+            throw new UnauthorizedAccessException("You do not have permission to add members.");
 
-        var project = await _db.Projects.Include(p => p.Members).FirstOrDefaultAsync(p => p.Id == request.ProjectId, cancellationToken);
-        var member = await _db.ProjectMembers.FirstOrDefaultAsync(m => m.Id == request.MemberId, cancellationToken);
+        var project = await _db.Projects
+                               .Include(p => p.Members)
+                               .FirstOrDefaultAsync(p => p.Id == request.ProjectId, cancellationToken);
 
-        if (project is null || member is null)
-            return false;
+        var user = await _db.Users.FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
 
-        if (!project.Members.Contains(member))
+        if (project is null || user is null)
+            throw new KeyNotFoundException("The project or user was not found.");
+
+        if (project.Members.Any(m => m.UserId == user.Id))
+            throw new InvalidOperationException("The user is already a member of the project.");
+
+        var member = new ProjectMember
         {
-            project.Members.Add(member);
-            await _db.SaveChangesAsync(cancellationToken);
-        }
+            ProjectId    = project.Id,
+            UserId       = user.Id,
+            DisplayName  = user.FullName,
+            Role         = ProjectMemberRole.Viewer,
+        };
+
+        _db.ProjectMembers.Add(member);      
+        await _db.SaveChangesAsync(cancellationToken);
 
         return true;
     }

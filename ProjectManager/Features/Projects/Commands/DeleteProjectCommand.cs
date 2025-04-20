@@ -15,32 +15,28 @@ public class DeleteProjectHandler : IRequestHandler<DeleteProjectCommand, bool>
 
     public DeleteProjectHandler(AppDbContext db, IUserContext userContext)
     {
-        _db = db;
+        _db          = db;
         _userContext = userContext;
     }
 
-    public async Task<bool> Handle(DeleteProjectCommand request, CancellationToken cancellationToken)
+    public async Task<bool> Handle(DeleteProjectCommand request, CancellationToken ct)
     {
         var project = await _db.Projects
             .Include(p => p.Details)
-            .Include(p => p.Members)
-            .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
+            .FirstOrDefaultAsync(p => p.Id == request.Id, ct);
 
-        if (project is null)
-            return false;
-
-        var userId = _userContext.UserId;
+        if (project is null) return false;
 
         var member = await _db.ProjectMembers
-            .Include(m => m.User)
-            .Include(m => m.Projects)
-            .FirstOrDefaultAsync(m => m.User.Id == userId && m.Projects.Any(p => p.Id == request.Id), cancellationToken);
+            .FirstOrDefaultAsync(m =>
+                m.ProjectId == request.Id &&
+                m.UserId    == _userContext.UserId, ct);
 
-        if (member == null || (member.Role != ProjectMemberRole.Owner && member.Role != ProjectMemberRole.Manager))
+        if (member is null || member.Role is not (ProjectMemberRole.Owner or ProjectMemberRole.Manager))
             return false;
 
         _db.Projects.Remove(project);
-        await _db.SaveChangesAsync(cancellationToken);
+        await _db.SaveChangesAsync(ct);
         return true;
     }
 }

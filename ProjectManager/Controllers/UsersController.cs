@@ -31,4 +31,19 @@ public class UsersController : ControllerBase
         var user = await _mediator.Send(new GetUserByIdQuery(id));
         return user is null ? NotFound() : Ok(user);
     }
+    
+    [HttpPost("login")]
+    [AllowAnonymous]
+    public async Task<IActionResult> Login([FromBody] LoginUserCommand command)
+    {
+        try
+        {
+            var token = await _mediator.Send(command);
+            return Ok(new { token });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized("Invalid email or password.");
+        }
+    }
 }

@@ -36,7 +36,6 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
             services.AddScoped<RegisterUserHandler>();
             services.AddScoped<LoginUserHandler>();
             services.AddScoped<CreateProjectHandler>();
-            services.AddScoped<CreateProjectMemberHandler>();
             services.AddScoped<AddProjectMemberToProjectHandler>();
             services.AddScoped<ChangeProjectMemberRoleHandler>();
             services.AddScoped<RemoveProjectMemberFromProjectHandler>();

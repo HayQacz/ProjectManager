@@ -10,8 +10,8 @@ namespace ProjectManager.Features.ProjectTasks.Queries;
 public record GetProjectTasksQuery(
     Guid ProjectId,
     ProjectTaskStatus? Status = null,
-    bool OnlyAssignedToMe = false,
-    bool OnlyUnassigned = false
+    bool OnlyAssignedToMe     = false,
+    bool OnlyUnassigned       = false
 ) : IRequest<List<ProjectTaskDto>>;
 
 public class GetProjectTasksHandler : IRequestHandler<GetProjectTasksQuery, List<ProjectTaskDto>>
@@ -21,65 +21,43 @@ public class GetProjectTasksHandler : IRequestHandler<GetProjectTasksQuery, List
 
     public GetProjectTasksHandler(AppDbContext db, IUserContext userContext)
     {
-        _db = db;
+        _db          = db;
         _userContext = userContext;
     }
 
-    public async Task<List<ProjectTaskDto>> Handle(GetProjectTasksQuery request, CancellationToken cancellationToken)
+    public async Task<List<ProjectTaskDto>> Handle(GetProjectTasksQuery request, CancellationToken ct)
     {
-        var userId = _userContext.UserId;
+        var member = await _db.ProjectMembers
+                              .FirstOrDefaultAsync(pm =>
+                                   pm.ProjectId == request.ProjectId &&
+                                   pm.UserId    == _userContext.UserId, ct);
 
-        var projectMember = await _db.ProjectMembers
-            .Include(pm => pm.User)
-            .Include(pm => pm.Projects)
-            .FirstOrDefaultAsync(pm =>
-                pm.User != null &&
-                pm.User.Id == userId &&
-                pm.Projects.Any(p => p.Id == request.ProjectId),
-                cancellationToken);
+        var allowedRoles = new[] { ProjectMemberRole.Contributor, ProjectMemberRole.Manager, ProjectMemberRole.Owner };
 
-        var allowedRoles = new[]
-        {
-            ProjectMemberRole.Contributor,
-            ProjectMemberRole.Manager,
-            ProjectMemberRole.Owner
-        };
-
-        if (projectMember is null || !allowedRoles.Contains(projectMember.Role))
-        {
+        if (member is null || !allowedRoles.Contains(member.Role))
             throw new UnauthorizedAccessException("You are not authorized to view project tasks.");
-        }
 
-        var query = _db.ProjectTasks
-            .Where(t => t.ProjectId == request.ProjectId)
-            .AsQueryable();
+        var query = _db.ProjectTasks.AsQueryable()
+                     .Where(t => t.ProjectId == request.ProjectId);
 
         if (request.Status.HasValue)
-        {
-            query = query.Where(t => t.Status == request.Status.Value);
-        }
+            query = query.Where(t => t.Status == request.Status);
 
         if (request.OnlyAssignedToMe)
-        {
-            query = query.Where(t => t.AssignedMemberId == projectMember.Id);
-        }
+            query = query.Where(t => t.AssignedMemberId == member.Id);
 
         if (request.OnlyUnassigned)
-        {
             query = query.Where(t => t.AssignedMemberId == null);
-        }
 
-        return await query
-            .Select(t => new ProjectTaskDto
-            {
-                Id = t.Id,
-                Title = t.Title,
-                Description = t.Description,
-                Deadline = t.Deadline,
-                Status = t.Status,
-                ProjectId = t.ProjectId,
-                AssignedMemberId = t.AssignedMemberId
-            })
-            .ToListAsync(cancellationToken);
+        return await query.Select(t => new ProjectTaskDto
+        {
+            Id               = t.Id,
+            Title            = t.Title,
+            Description      = t.Description,
+            Deadline         = t.Deadline,
+            Status           = t.Status,
+            ProjectId        = t.ProjectId,
+            AssignedMemberId = t.AssignedMemberId
+        }).ToListAsync(ct);
     }
 }

@@ -7,15 +7,11 @@ public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-    public DbSet<Project> Projects => Set<Project>();
-    public DbSet<ProjectDetails> ProjectDetails => Set<ProjectDetails>();
-    public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
-    public DbSet<ProjectCategory> ProjectCategories => Set<ProjectCategory>();
-    public DbSet<ProjectCategoryItem> ProjectCategoryItems => Set<ProjectCategoryItem>();
-    public DbSet<User> Users => Set<User>();
-    public DbSet<ProjectTask> ProjectTasks => Set<ProjectTask>();
-
-    
+    public DbSet<Project>        Projects        => Set<Project>();
+    public DbSet<ProjectDetails> ProjectDetails  => Set<ProjectDetails>();
+    public DbSet<ProjectMember>  ProjectMembers  => Set<ProjectMember>();
+    public DbSet<ProjectTask>    ProjectTasks    => Set<ProjectTask>();
+    public DbSet<User>           Users           => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -27,16 +23,21 @@ public class AppDbContext : DbContext
             .HasForeignKey<ProjectDetails>(d => d.ProjectId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<Project>()
-            .HasMany(p => p.Members)
-            .WithMany(m => m.Projects)
-            .UsingEntity(j => j.ToTable("ProjectMembersProjects"));
+        modelBuilder.Entity<ProjectMember>()
+            .HasKey(pm => new { pm.ProjectId, pm.UserId }); 
 
-        modelBuilder.Entity<User>()
-            .HasOne(u => u.ProjectMember)
-            .WithOne(pm => pm.User)
-            .HasForeignKey<User>(u => u.ProjectMemberId);
-        
+        modelBuilder.Entity<ProjectMember>()
+            .HasOne(pm => pm.Project)
+            .WithMany(p  => p.Members)
+            .HasForeignKey(pm => pm.ProjectId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ProjectMember>()
+            .HasOne(pm => pm.User)
+            .WithMany(u  => u.Members)                     
+            .HasForeignKey(pm => pm.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         modelBuilder.Entity<ProjectTask>()
             .HasOne(t => t.Project)
             .WithMany(p => p.Tasks)
@@ -48,7 +49,5 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(t => t.AssignedMemberId)
             .OnDelete(DeleteBehavior.SetNull);
-
     }
-
 }

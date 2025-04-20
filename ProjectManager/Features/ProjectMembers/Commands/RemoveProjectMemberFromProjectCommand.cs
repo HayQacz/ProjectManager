@@ -1,42 +1,59 @@
 ﻿using MediatR;
 using Microsoft.EntityFrameworkCore;
+using ProjectManager.Entities;
 using ProjectManager.Persistence;
 using ProjectManager.Services.Interfaces;
 
-namespace ProjectManager.Features.ProjectMembers.Commands;
-
-public record RemoveProjectMemberFromProjectCommand(Guid ProjectId, Guid MemberId, Guid RequestingUserId) : IRequest<bool>;
-
-public class RemoveProjectMemberFromProjectHandler : IRequestHandler<RemoveProjectMemberFromProjectCommand, bool>
+namespace ProjectManager.Features.ProjectMembers.Commands
 {
-    private readonly AppDbContext _db;
-    private readonly IProjectAuthorizationService _auth;
+    public record RemoveProjectMemberFromProjectCommand(Guid ProjectId, Guid? UserId, Guid RequestingUserId) : IRequest<bool>;
 
-    public RemoveProjectMemberFromProjectHandler(AppDbContext db, IProjectAuthorizationService auth)
+    public class RemoveProjectMemberFromProjectHandler : IRequestHandler<RemoveProjectMemberFromProjectCommand, bool>
     {
-        _db = db;
-        _auth = auth;
-    }
+        private readonly AppDbContext _db;
+        private readonly IProjectAuthorizationService _auth;
 
-    public async Task<bool> Handle(RemoveProjectMemberFromProjectCommand request, CancellationToken cancellationToken)
-    {
-        if (!await _auth.CanManageMembers(request.RequestingUserId, request.ProjectId))
-            return false;
+        public RemoveProjectMemberFromProjectHandler(AppDbContext db, IProjectAuthorizationService auth)
+        {
+            _db = db;
+            _auth = auth;
+        }
 
-        var project = await _db.Projects
-            .Include(p => p.Members)
-            .FirstOrDefaultAsync(p => p.Id == request.ProjectId, cancellationToken);
+        public async Task<bool> Handle(RemoveProjectMemberFromProjectCommand request, CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (!await _auth.CanManageMembers(request.RequestingUserId, request.ProjectId))
+                    throw new UnauthorizedAccessException("You do not have permission to remove members.");
 
-        if (project is null)
-            return false;
+                var project = await _db.Projects
+                    .Include(p => p.Members)
+                    .FirstOrDefaultAsync(p => p.Id == request.ProjectId, cancellationToken);
 
-        var member = project.Members.FirstOrDefault(m => m.Id == request.MemberId);
-        if (member is null)
-            return false;
+                if (project == null)
+                    throw new KeyNotFoundException("The project was not found.");
 
-        project.Members.Remove(member);
-        await _db.SaveChangesAsync(cancellationToken);
+                var member = project.Members.FirstOrDefault(m => m.UserId == request.UserId);
+                if (member == null)
+                    throw new KeyNotFoundException("The project member was not found.");
 
-        return true;
+                project.Members.Remove(member);
+                await _db.SaveChangesAsync(cancellationToken);
+
+                return true;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                throw new UnauthorizedAccessException("You do not have permission to remove members.", ex);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                throw new KeyNotFoundException("The project member was not found.", ex);
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("An unexpected error occurred while removing the member from the project.", ex);
+            }
+        }
     }
 }

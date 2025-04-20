@@ -7,6 +7,6 @@ public class User
     public string PasswordHash { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
 
-    public ProjectMember? ProjectMember { get; set; }
+    public ICollection<ProjectMember> Members { get; set; } = new List<ProjectMember>();
     public Guid? ProjectMemberId { get; set; }
 }
